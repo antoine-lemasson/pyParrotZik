@@ -12,13 +12,12 @@ from BeautifulSoup import BeautifulSoup
 
 class ParrotZik(object):
 	def __init__(self,addr=None):
-		uuid = "0ef0f502-f0ee-46c9-986c-54ed027807fb"
-
+		uuid = "" # Not used ...
 
 		if sys.platform == "darwin":
 			service_matches = lightblue.findservices( name = "Parrot RFcomm service", addr = addr )
 		else:
-			service_matches = bluetooth.find_service( uuid = uuid, address = addr )		
+			service_matches = bluetooth.find_service(name = "Parrot RFcomm service", address = addr )		
 
 
 		if len(service_matches) == 0:
@@ -60,8 +59,8 @@ class ParrotZik(object):
 	def getBatteryLevel(self):
 		data = self.sendGetMessage("/api/system/battery/get")	
 		try:
-			if data.answer.system.battery["level"] <> '':
-				self.BatteryLevel = data.answer.system.battery["level"]
+			if data.answer.system.battery["percent"] <> '':
+				self.BatteryLevel = data.answer.system.battery["percent"]
 			if data.answer.system.battery["state"] == 'charging':
 				self.BatteryCharging = True
 			else:
@@ -77,8 +76,8 @@ class ParrotZik(object):
 		return self.BatteryLevel
 
 	def getVersion(self):
-		data = self.sendGetMessage("/api/software/version/get")
-		return data.answer.software["version"]	
+                data = self.sendGetMessage("/api/software/version/get")
+		return data.answer.software["sip6"]	
 
 	def getFriendlyName(self):
 		data = self.sendGetMessage("/api/bluetooth/friendlyname/get")
@@ -96,6 +95,10 @@ class ParrotZik(object):
 		data = self.sendGetMessage("/api/system/anc_phone_mode/enabled/get")
 		return data.answer.system.anc_phone_mode["enabled"]
 
+	def getNoiseCancelStreet(self):
+		data = self.sendGetMessage("/api/audio/equalizer/preset_value/get")
+		return data.answer.audio.noise_cancellation["enabled"]
+
 	def getNoiseCancel(self):
 		data = self.sendGetMessage("/api/audio/noise_cancellation/enabled/get")
 		return data.answer.audio.noise_cancellation["enabled"]
@@ -108,8 +111,74 @@ class ParrotZik(object):
 		data = self.sendGetMessage("/api/audio/specific_mode/enabled/get")
 		return data.answer.audio.specific_mode["enabled"]
 
+
+        def getFlightMode(self):
+                data = self.sendGetMessage("/api/flight_mode/get")
+		return data.answer.flight_mode["enabled"]
+
+        def unsetFlightMode(self):
+                data = self.sendGetMessage("/api/flight_mode/disable")
+                try:
+			if data.answer["path"] <> '':
+                                return data.answer["path"]                
+                except:
+                        pass
+
+		try:
+			print "notification received" + data.notify["path"]
+		except:
+			pass
+                
+        def setFlightMode(self):
+                data = self.sendGetMessage("/api/flight_mode/enable")
+		return data.answer["path"]
+
+
+        def getSoundEffect(self):
+		data = self.sendGetMessage("/api/audio/sound_effect/get")
+		return data.answer.audio.sound_effect["room_size"]
+
+        def getNoise(self):
+		data = self.sendGetMessage("/api/audio/noise/get")
+#		return data.answer.audio.noise["internal"]
+		return data.answer.audio.noise["external"]
+
+	def getRoom(self):
+		data = self.sendGetMessage("/api/audio/sound_effect/room_size/get")
+		return data.answer.audio.sound_effect["room_size"]
+
+	def setRoom(self,arg):
+		data = self.sendSetMessage("/api/audio/sound_effect/room_size/set",arg)
+		return data
+
+	def getAngle(self):
+		data = self.sendGetMessage("/api/audio/sound_effect/angle/get")
+		return data.answer.audio.sound_effect["angle"]
+
+	def setAngle(self,arg):
+		data = self.sendSetMessage("/api/audio/sound_effect/angle/set",arg)
+		return data
+
+        def getNoiseControl(self):
+                data = self.sendGetMessage("/api/audio/noise_control/get")
+#                return data.answer.audio.noise_control["type"] #// anc aoc
+                return data.answer.audio.noise_control["value"] #// 1,2,3 ? 
+
+	def setNoiseControl(self,arg):
+		data = self.sendSetMessage("/api/audio/noise_control/set",arg)
+		return data
+         
+        def getNoiseControlEnabled(self):
+                data = self.sendGetMessage("/api/audio/noise_control/enabled/get")
+                return data.answer.audio.noise_control["enabled"] 
+       
+
+	def getTest(self):
+		data = self.sendGetMessage("/api/audio/noise_control/get")
+		return data.answer.audio.specific_mode["enabled"]
+
 	def setLouReedMode(self,arg):
-		data = self.sendSetMessage("/api/audio/specific_mode/enabled/set",arg)
+		data = self.sendSetMessage("/api/audio/sound_effect/angle/get",arg)
 		return data
 
 	def getParrotConcertHall(self):
@@ -121,8 +190,10 @@ class ParrotZik(object):
 		return data
 
 	def sendGetMessage(self,message):
-		message = ParrotProtocol.getRequest(message)
-		return self.sendMessage(message)
+                print message
+                message = ParrotProtocol.getRequest(message)
+		
+                return self.sendMessage(message)
 
 	def sendSetMessage(self,message,arg):
 		message = ParrotProtocol.setRequest(message,arg)
@@ -140,6 +211,7 @@ class ParrotZik(object):
 			data = self.sock.recv(7)
 		data = self.sock.recv(1024)
 		data=BeautifulSoup(data)
+                print data
 		return data
 
 	def Close(self):
