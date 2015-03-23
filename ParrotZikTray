@@ -26,18 +26,61 @@ class ParrotZikIndicator(SysIndicator):
 
         self.firmware_version = MenuItem("Firmware Version:",None,sensitive = False)  
         self.menu.append(self.firmware_version)
+        
+        self.nc =  MenuItem("Noise Cancellation",None,sensitive = True)
 
-        self.check = MenuItem("Noise Cancellation",self.toggleANC,sensitive = False, checkitem = True)
-        self.menu.append(self.check)
+        self.nc_submenu = UniversalMenu();
+        self.nc.gtk_item.set_submenu(self.nc_submenu.gtk_menu)
+
+        self.check = MenuItem("Enabled",self.toggleANC,sensitive = False, checkitem = True)
+
+        self.nc_mode0 = MenuItem("Mode0",self.toggledummy,sensitive = False, checkitem = True )
+        self.nc_mode1 = MenuItem("Mode1",self.toggledummy,sensitive = False, checkitem = True )
+        self.nc_mode2 = MenuItem("Mode2",self.toggledummy,sensitive = False, checkitem = True )
+        self.nc_mode3 = MenuItem("Mode3",self.toggledummy,sensitive = False, checkitem = True )
+
+        self.nc_submenu.append(self.check)
+        sep = gtk.SeparatorMenuItem()
+        self.nc_submenu.gtk_menu.append(sep)
+
+        self.nc_submenu.append(self.nc_mode0);
+        self.nc_submenu.append(self.nc_mode1);
+        self.nc_submenu.append(self.nc_mode2);
+        self.nc_submenu.append(self.nc_mode3);
+
+        
+        self.menu.append(self.nc)
 
         self.check2 = MenuItem("Auto Connection",self.toggleAuto,sensitive = False, checkitem = True)        
         self.menu.append(self.check2)
 
-        self.check3 = MenuItem("Lou Reed Mode",self.toggleLouReedMode,sensitive = False, checkitem = True)
+        
+
+        self.check3 = MenuItem("Concert Hall Mode",None,sensitive = True, checkitem = False)
+
+        self.submenu1 = UniversalMenu();
+        self.check3.gtk_item.set_submenu(self.submenu1.gtk_menu)
+
+        self.check4 = MenuItem("Enabled",self.toggleParrotConcertHall,sensitive = True, checkitem = True)
+
+        self.concertmode = MenuItem("Concert Hall",self.toggleConcertMode,sensitive = True, checkitem = True )
+        self.jazzmode = MenuItem("Jazz Club",self.toggleJazzMode,sensitive = True, checkitem = True )
+        self.livingmode = MenuItem("Living Room",self.toggleLivingMode,sensitive = True, checkitem = True )
+        self.silentmode = MenuItem("Silent room",self.toggleSilentMode,sensitive = True, checkitem = True )
+
+        self.submenu1.append(self.check4)
+        sep = gtk.SeparatorMenuItem()
+        self.submenu1.gtk_menu.append(sep)
+
+        self.submenu1.append(self.concertmode);
+        self.submenu1.append(self.jazzmode);
+        self.submenu1.append(self.livingmode);
+        self.submenu1.append(self.silentmode);
         self.menu.append(self.check3)
 
-        self.check4 = MenuItem("Concert Hall Mode",self.toggleParrotConcertHall,sensitive = False, checkitem = True)
-        self.menu.append(self.check4)
+
+        self.check5 = MenuItem("Flight Mode",self.toggleFlightMode,sensitive = True, checkitem = True)
+        self.menu.append(self.check5)
 
         self.quit = MenuItem("Quit",sys.exit,sensitive = True, checkitem = True)
         self.menu.append(self.quit)
@@ -45,7 +88,7 @@ class ParrotZikIndicator(SysIndicator):
         SysIndicator.__init__(self,icon = "zik-audio-headset",menu = self.menu)
 
         self.connected=False
-        self.p = re.compile('90:03:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}')
+        self.p = re.compile('[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}')
 
     def EstablishConnection(self):
         if self.connected:
@@ -64,11 +107,12 @@ class ParrotZikIndicator(SysIndicator):
 
                 self.connected = True
                 self.name = self.parrot.getFriendlyName()
+                print self.name
                 self.version = self.parrot.getVersion()
-
+                
                 self.check.set_sensitive(True)
                 self.check2.set_sensitive(True)
-                self.check3.set_sensitive(True)
+#                self.check3.set_sensitive(True)
                 self.check4.set_sensitive(True)
 
                 if self.parrot.getNoiseCancel() == "true":
@@ -80,26 +124,72 @@ class ParrotZikIndicator(SysIndicator):
                     self.check2.set_active(True)
                 else:
                     self.check2.set_active(False)
-
-                if self.parrot.getLouReedMode() == "true":
-                    self.check3.set_active(True)
+                    
+                if self.parrot.getFlightMode() == "true":
+                    self.check5.set_active(True)
                 else:
-                    self.check3.set_active(False)
+                    self.check5.set_active(False)
 
+                
+                self.parrot.getNoiseControl()
+                self.parrot.setNoiseControl("anc++2")
+                self.parrot.getNoiseControl()
+
+       #self.parrot.getNoise() #// Noise Level ?? External  and internal
+                self.parrot.getSoundEffect() #// ??
+                
+                #                self.parrot.getAngle()
+                #                self.parrot.setAngle("120") # 30 ... 180 (step 30)
+                #                self.parrot.getAngle()
+                
+            
+                #                if self.parrot.getLouReedMode() == "true":
+                #                    self.check3.set_active(True)
+                #                else:
+                #                    self.check3.set_active(False)
+                
+                
+                self.CheckConcertMode()
+
+            
+                
                 if self.parrot.getParrotConcertHall() == "true":
                     self.check4.set_active(True)
+                    self.concertmode.set_sensitive(True)
+                    self.jazzmode.set_sensitive(True)
+                    self.livingmode.set_sensitive(True)
+                    self.silentmode.set_sensitive(True)
+                    
                 else:
                     self.check4.set_active(False)
+                    self.concertmode.set_sensitive(False)
+                    self.jazzmode.set_sensitive(False)
+                    self.livingmode.set_sensitive(False)
+                    self.silentmode.set_sensitive(False)
 
                 self.CheckBattery()
         return True
 
     def toggleANC(self,widget):
         if self.connected:
+            self.parrot.getNoiseControl()
+            
             if self.check.get_active():
                 self.parrot.setNoiseCancel("true")
             else:
                 self.parrot.setNoiseCancel("false")
+    def CheckConcertMode(self):
+        if self.connected:
+            print "Checking Noise Cancellation Mode" 
+            mode = self.parrot.getRoom()
+            print  mode
+   
+    def toggleFlightMode(self,widget):
+        if self.connected:
+            if self.check5.get_active():
+                self.parrot.setFlightMode()
+            else:
+                self.parrot.unsetFlightMode()
 
     def toggleAuto(self,widget):
         if self.connected:
@@ -107,32 +197,96 @@ class ParrotZikIndicator(SysIndicator):
                 self.parrot.setAutoConnection("true")
             else:
                 self.parrot.setAutoConnection("false")
-
-    def toggleLouReedMode(self,widget):
+    
+    def toggleConcertMode(self,widget):
         if self.connected:
-            if self.check3.get_active():
-                self.parrot.setLouReedMode("true")
-                self.check4.set_sensitive(False)
-            else:
-                self.parrot.setLouReedMode("false")      
-                self.check4.set_sensitive(True)
+            if self.concertmode.get_active():
+                self.parrot.setRoom("concert")
+                self.CheckConcertMode()
+                
+    def toggleJazzMode(self,widget):
+        if self.connected:
+            if self.jazzmode.get_active():
+                self.parrot.setRoom("jazz")
+                self.CheckConcertMode()
+
+    def toggleLivingMode(self,widget):
+        if self.connected:
+            if self.livingmode.get_active():
+                self.parrot.setRoom("living")
+                self.CheckConcertMode()
+                
+    def toggleSilentMode(self,widget):
+        if self.connected:
+            if self.silentmode.get_active():
+                self.parrot.setRoom("silent")
+                self.CheckConcertMode()
+                
+    def toggledummy(self,widget):
+        print mode 
+        print widget.get_name()
+
+#    def toggleLouReedMode(self,widget):
+#        if self.connected:
+#           if self.check3.get_active():
+#                self.parrot.setLouReedMode("true")
+#                self.check4.set_sensitive(False)
+#            else:
+#                self.parrot.setLouReedMode("false")      
+#                self.check4.set_sensitive(True)
             
     def toggleParrotConcertHall(self,widget):
         if self.connected:
             if self.check4.get_active():
                 self.parrot.setParrotConcertHall("true")
+                self.concertmode.set_sensitive(True)
+                self.jazzmode.set_sensitive(True)
+                self.livingmode.set_sensitive(True)
+                self.silentmode.set_sensitive(True)
+                self.CheckConcertMode()
             else:
                 self.parrot.setParrotConcertHall("false")
+                self.concertmode.set_sensitive(False)
+                self.jazzmode.set_sensitive(False)
+                self.livingmode.set_sensitive(False)
+                self.silentmode.set_sensitive(False)
+
+
+    def CheckConcertMode(self):
+        if self.connected:
+            print "Checking Mode" 
+            mode = self.parrot.getRoom()
+            print  mode
+            if mode == "concert":
+                self.concertmode.set_active(True)
+                self.jazzmode.set_active(False)
+                self.livingmode.set_active(False)
+                self.silentmode.set_active(False)
+            elif mode  == "jazz":
+                self.concertmode.set_active(False)
+                self.jazzmode.set_active(True)
+                self.livingmode.set_active(False)
+                self.silentmode.set_active(False)
+            elif mode == "living":
+                self.concertmode.set_active(False)
+                self.jazzmode.set_active(False)
+                self.livingmode.set_active(True)
+                self.silentmode.set_active(False)
+            elif mode == "silent":
+                self.concertmode.set_active(False)
+                self.jazzmode.set_active(False)
+                self.livingmode.set_active(False)
+                self.silentmode.set_active(True)
 
     def CheckBattery(self):
         if self.connected:
-            print "Updating battery"
+            print "Updating battery" 
             self.batteryLevel = int(self.parrot.getBatteryLevel())
-            
+            print self.batteryLevel
             if self.parrot.BatteryCharging:
-                self.batteryLevel = "Charging"
+               # self.batteryLevel = "Charging"
                 self.setIcon("zik-battery-charging")
-                self.batteryLevel="Unknown"
+               # self.batteryLevel="Unknown" + self.batteryLevel
                 self.batteryState="Charging"
             elif self.batteryLevel>80:
                 self.setIcon("zik-battery-100")
@@ -157,16 +311,19 @@ class ParrotZikIndicator(SysIndicator):
         else:
             self.setIcon("zik-audio-headset")
             self.info_item.set_label("Parrot Zik Not connected..")
-            self.check.set_sensitive(False)
+            self.nc.set_sensitive(False)
             self.check2.set_sensitive(False)
             self.check3.set_sensitive(False)
             self.check4.set_sensitive(False)
+            self.check5.set_sensitive(False)
+
         return True
 
     def main(self):
         self.EstablishConnection()
         gtk.timeout_add(UPDATE_FREQUENCY * 1000, self.EstablishConnection)
         gtk.timeout_add(UPDATE_FREQUENCY * 1000, self.CheckBattery)
+        gtk.timeout_add(UPDATE_FREQUENCY * 1000, self.parrot.getNoise)
         SysIndicator.main(self)   
 
 if __name__ == "__main__":
